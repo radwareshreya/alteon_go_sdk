@@ -5,7 +5,7 @@ import (
 	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
+	//"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -24,13 +24,13 @@ func AlteonLogin(host string, username string, password string) (*http.Request, 
 	//postData := []byte(`{"key": "value"}`)
 	req, err := http.NewRequest("POST", url, nil)
 	if err != nil {
-		fmt.Println("Error creating login request:", err)
+		//fmt.Println("Error creating login request:", err)
 		return nil, err
 	}
 
 	req.Header.Set("Authorization", authHeader)
 	req.Header.Set("Content-Type", "application/json")
-	fmt.Println(req)
+	//fmt.Println(req)
 
 	// resp, err := client.Do(req)
 	// //fmt.Println(resp)
@@ -49,7 +49,7 @@ func AlteonLogin(host string, username string, password string) (*http.Request, 
 }
 
 // Request is a function in the do_request package
-func Request(host string, method string, API string, Data map[string]string, request *http.Request) {
+func Request(host string, method string, API string, Data map[string]string, request *http.Request) (int, string, error) {
 	client := &http.Client{
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
@@ -60,16 +60,16 @@ func Request(host string, method string, API string, Data map[string]string, req
 	URL := "https://" + host + API
 	APIBytes, err := json.Marshal(Data)
 	if err != nil {
-		fmt.Println("Error encoding JSON:", err)
-		return
+		//fmt.Println("Error encoding JSON:", err)
+		return 0, "Error encoding JSON", err
 	}
 	New_Request, err := http.NewRequest(strings.ToUpper(method), URL, bytes.NewBuffer(APIBytes))
-	fmt.Println(New_Request)
+	//fmt.Println(New_Request)
 	APIRequest = New_Request
 	new_err = err
 	if new_err != nil {
-		fmt.Println("Error creating API request:", new_err)
-		return
+		//fmt.Println("Error creating API request:", new_err)
+		return 0, "Error creating API request", new_err
 	}
 	// Add headers to the request
 	//APIRequest.Header.Set("Content-Type", "application/json")
@@ -78,27 +78,33 @@ func Request(host string, method string, API string, Data map[string]string, req
 	APIRequest.Header = request.Header.Clone()
 	APIResponse, err := client.Do(APIRequest)
 	if err != nil {
-		fmt.Println("Error making API request:", err)
-		return
+		//fmt.Println("Error making API request:", err)
+		return 0, "Error making API request", err
 	}
 	defer APIResponse.Body.Close()
-	fmt.Println("NEW")
-	fmt.Println(APIResponse.StatusCode)
 
 	// Read the response body of the API call
 	APIResponseBody, err := ioutil.ReadAll(APIResponse.Body)
 	if err != nil {
-		fmt.Println("Error reading API response body:", err)
-		return
+		//fmt.Println("Error reading API response body:", err)
+		return APIResponse.StatusCode, "Error reading API response body", err
 	}
 
 	// Handle the response data of the API call as needed
 	// ...
 
 	// Print the response body of the API call
-	fmt.Println(string(APIResponseBody))
+	//fmt.Println(string(APIResponseBody))
+	return APIResponse.StatusCode, string(APIResponseBody), nil
 
 }
+
+func basicAuthHeader(username, password string) string {
+	auth := username + ":" + password
+	b64 := base64.StdEncoding.EncodeToString([]byte(auth))
+	return "Basic " + b64
+}
+
 
 func basicAuthHeader(username, password string) string {
 	auth := username + ":" + password
